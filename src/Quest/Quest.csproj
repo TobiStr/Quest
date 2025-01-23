@@ -2,11 +2,25 @@
 
   <PropertyGroup>
 	  <TargetFrameworks>netstandard2.0</TargetFrameworks>
+	  <Features>strict</Features>
 
-	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <PackageId>Quest</PackageId>
+	  <Description>An implementation of the Quest pattern. A wrapper with mutable payload but immutable OnComplete and OnError handlers, whose implementation details are only known to the creator.</Description>
 	  <Authors>Tobias Streng</Authors>
-	  <Description>The Quest Pattern</Description>
+	  <Copyright>Copyright Tobias Streng</Copyright>
 	  <PackageVersion>1.0.0</PackageVersion>
+	  <PackageProjectUrl>https://github.com/TobiStr/Quest</PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/TobiStr/Quest</RepositoryUrl>
+	  <PackageTags>quest;pattern;clean;code;immutable;journey;saga</PackageTags>
+	  <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <PackageReadmeFile>readme.md</PackageReadmeFile>
+	  <PackageIcon>fernglas.png</PackageIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+		<None Include="..\..\docs\readme.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\img\fernglas.png" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
 </Project>
