@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 namespace TobiStr
 {
     /// <summary>
-    /// Provides extension methods for working with <see cref="Quest{T}"/> objects.
+    /// Provides extension methods for working with <see cref="IQuest{T}"/> objects.
     /// </summary>
-    public static class QuestExtensions
+    public static class SynchronousQuestExtensions
     {
         /// <summary>
         /// Executes a synchronous action on the payload of the quest and returns the quest.
@@ -17,7 +17,8 @@ namespace TobiStr
         /// <param name="action">The action to perform on the payload.</param>
         /// <returns>The original quest after the action is executed.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static Quest<T> Tap<T>(this Quest<T> quest, Action<T> action)
+        public static IQuest<T> Tap<T>(this IQuest<T> quest, Action<T> action)
+            where T : class
         {
             try
             {
@@ -26,7 +27,7 @@ namespace TobiStr
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -39,10 +40,11 @@ namespace TobiStr
         /// <param name="asyncAction">The asynchronous action to perform on the payload.</param>
         /// <returns>A task representing the asynchronous operation, with the original quest as the result.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static async Task<Quest<T>> TapAsync<T>(
-            this Quest<T> quest,
+        public static async Task<IQuest<T>> TapAsync<T>(
+            this IQuest<T> quest,
             Func<T, Task> asyncAction
         )
+            where T : class
         {
             try
             {
@@ -51,8 +53,7 @@ namespace TobiStr
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -66,11 +67,12 @@ namespace TobiStr
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task representing the asynchronous operation, with the original quest as the result.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static async Task<Quest<T>> TapAsync<T>(
-            this Quest<T> quest,
+        public static async Task<IQuest<T>> TapAsync<T>(
+            this IQuest<T> quest,
             Func<T, CancellationToken, Task> asyncAction,
             CancellationToken cancellationToken
         )
+            where T : class
         {
             try
             {
@@ -79,8 +81,7 @@ namespace TobiStr
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -94,20 +95,17 @@ namespace TobiStr
         /// <param name="selector">The function to transform the payload.</param>
         /// <returns>A new quest with the transformed payload.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static Quest<T2> Select<T, T2>(this Quest<T> quest, Func<T, T2> selector)
+        public static IQuest<T2> Select<T, T2>(this IQuest<T> quest, Func<T, T2> selector)
+            where T : class
+            where T2 : class
         {
             try
             {
-                return new Quest<T2>(
-                    selector.Invoke(quest.Payload),
-                    quest.CompletionAction,
-                    quest.ErrorAction
-                );
+                return new Quest<T2>(selector.Invoke(quest.Payload), quest.Complete, quest.Fail);
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -121,23 +119,24 @@ namespace TobiStr
         /// <param name="selector">The asynchronous function to transform the payload.</param>
         /// <returns>A task representing the asynchronous operation, with a new quest as the result.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static async Task<Quest<T2>> SelectAsync<T, T2>(
-            this Quest<T> quest,
+        public static async Task<IQuest<T2>> SelectAsync<T, T2>(
+            this IQuest<T> quest,
             Func<T, Task<T2>> selector
         )
+            where T : class
+            where T2 : class
         {
             try
             {
                 return new Quest<T2>(
                     await selector.Invoke(quest.Payload),
-                    quest.CompletionAction,
-                    quest.ErrorAction
+                    quest.Complete,
+                    quest.Fail
                 );
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -152,24 +151,25 @@ namespace TobiStr
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task representing the asynchronous operation, with a new quest as the result.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static async Task<Quest<T2>> SelectAsync<T, T2>(
-            this Quest<T> quest,
+        public static async Task<IQuest<T2>> SelectAsync<T, T2>(
+            this IQuest<T> quest,
             Func<T, CancellationToken, Task<T2>> selector,
             CancellationToken cancellationToken
         )
+            where T : class
+            where T2 : class
         {
             try
             {
                 return new Quest<T2>(
                     await selector.Invoke(quest.Payload, cancellationToken),
-                    quest.CompletionAction,
-                    quest.ErrorAction
+                    quest.Complete,
+                    quest.Fail
                 );
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -181,7 +181,8 @@ namespace TobiStr
         /// <param name="quest">The quest to complete.</param>
         /// <param name="finalAction">An optional action to invoke with the payload before completion.</param>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
-        public static void Complete<T>(this Quest<T> quest, Action<T> finalAction = null)
+        public static void Complete<T>(this IQuest<T> quest, Action<T> finalAction = null)
+            where T : class
         {
             try
             {
@@ -190,13 +191,11 @@ namespace TobiStr
                     finalAction.Invoke(quest.Payload);
                 }
 
-                quest.CompletionAction.Invoke();
-                quest.State = QuestState.Completed;
+                quest.Complete();
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -210,9 +209,10 @@ namespace TobiStr
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
         public static async Task CompleteAsync<T>(
-            this Quest<T> quest,
+            this IQuest<T> quest,
             Func<T, Task> finalAction = null
         )
+            where T : class
         {
             try
             {
@@ -221,13 +221,11 @@ namespace TobiStr
                     await finalAction.Invoke(quest.Payload);
                 }
 
-                quest.CompletionAction.Invoke();
-                quest.State = QuestState.Completed;
+                quest.Complete();
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
@@ -242,10 +240,11 @@ namespace TobiStr
         /// <returns>A task representing the asynchronous operation.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
         public static async Task CompleteAsync<T>(
-            this Quest<T> quest,
+            this IQuest<T> quest,
             Func<T, CancellationToken, Task> finalAction,
             CancellationToken cancellationToken
         )
+            where T : class
         {
             try
             {
@@ -254,13 +253,11 @@ namespace TobiStr
                     await finalAction.Invoke(quest.Payload, cancellationToken);
                 }
 
-                quest.CompletionAction.Invoke();
-                quest.State = QuestState.Completed;
+                quest.Complete();
             }
             catch (Exception ex)
             {
-                quest.ErrorAction(ex);
-                quest.State = QuestState.Failed;
+                quest.Fail(ex);
                 throw;
             }
         }
