@@ -21,7 +21,6 @@ namespace TobiStr
             this IAsyncQuest<T> quest,
             Func<T, Task> asyncAction
         )
-            where T : class
         {
             try
             {
@@ -49,7 +48,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task> asyncAction,
             CancellationToken cancellationToken
         )
-            where T : class
         {
             try
             {
@@ -76,8 +74,6 @@ namespace TobiStr
             this IAsyncQuest<T> quest,
             Func<T, Task<T2>> selector
         )
-            where T : class
-            where T2 : class
         {
             try
             {
@@ -109,8 +105,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task<T2>> selector,
             CancellationToken cancellationToken
         )
-            where T : class
-            where T2 : class
         {
             try
             {
@@ -139,7 +133,6 @@ namespace TobiStr
             this IAsyncQuest<T> quest,
             Func<T, Task> finalAction = null
         )
-            where T : class
         {
             try
             {
@@ -171,7 +164,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task> finalAction,
             CancellationToken cancellationToken
         )
-            where T : class
         {
             try
             {

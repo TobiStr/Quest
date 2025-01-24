@@ -8,7 +8,6 @@ namespace TobiStr
     /// </summary>
     /// <typeparam name="T">The type of the payload associated with the task.</typeparam>
     internal class Quest<T> : IAsyncQuest<T>, IQuest<T>
-        where T : class
     {
         private readonly Action onComplete;
 

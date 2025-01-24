@@ -15,7 +15,6 @@ namespace TobiStr
         /// <typeparam name="T">The type of the payload associated with the quest.</typeparam>
         /// <returns>An instance of <see cref="IQuestBuilder{T}"/> for building synchronous quests.</returns>
         public static IQuestBuilder<T> GetSynchronousQuestBuilder<T>()
-            where T : class
         {
             return new SyncQuestBuilder<T>();
         }
@@ -26,14 +25,12 @@ namespace TobiStr
         /// <typeparam name="T">The type of the payload associated with the quest.</typeparam>
         /// <returns>An instance of <see cref="IAsyncQuestBuilder{T}"/> for building asynchronous quests.</returns>
         public static IAsyncQuestBuilder<T> GetAsynchronousQuestBuilder<T>()
-            where T : class
         {
             return new AsyncQuestBuilder<T>();
         }
     }
 
     internal class SyncQuestBuilder<T> : IQuestBuilder<T>
-        where T : class
     {
         private T payload;
 
@@ -81,7 +78,6 @@ namespace TobiStr
     }
 
     internal class AsyncQuestBuilder<T> : IAsyncQuestBuilder<T>
-        where T : class
     {
         private T payload;
 

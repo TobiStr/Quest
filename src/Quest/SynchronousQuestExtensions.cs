@@ -18,7 +18,6 @@ namespace TobiStr
         /// <returns>The original quest after the action is executed.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
         public static IQuest<T> Tap<T>(this IQuest<T> quest, Action<T> action)
-            where T : class
         {
             try
             {
@@ -44,7 +43,6 @@ namespace TobiStr
             this IQuest<T> quest,
             Func<T, Task> asyncAction
         )
-            where T : class
         {
             try
             {
@@ -72,7 +70,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task> asyncAction,
             CancellationToken cancellationToken
         )
-            where T : class
         {
             try
             {
@@ -96,8 +93,6 @@ namespace TobiStr
         /// <returns>A new quest with the transformed payload.</returns>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
         public static IQuest<T2> Select<T, T2>(this IQuest<T> quest, Func<T, T2> selector)
-            where T : class
-            where T2 : class
         {
             try
             {
@@ -123,8 +118,6 @@ namespace TobiStr
             this IQuest<T> quest,
             Func<T, Task<T2>> selector
         )
-            where T : class
-            where T2 : class
         {
             try
             {
@@ -156,8 +149,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task<T2>> selector,
             CancellationToken cancellationToken
         )
-            where T : class
-            where T2 : class
         {
             try
             {
@@ -182,7 +173,6 @@ namespace TobiStr
         /// <param name="finalAction">An optional action to invoke with the payload before completion.</param>
         /// <exception cref="Exception">Re-throws any exception encountered during the action.</exception>
         public static void Complete<T>(this IQuest<T> quest, Action<T> finalAction = null)
-            where T : class
         {
             try
             {
@@ -212,7 +202,6 @@ namespace TobiStr
             this IQuest<T> quest,
             Func<T, Task> finalAction = null
         )
-            where T : class
         {
             try
             {
@@ -244,7 +233,6 @@ namespace TobiStr
             Func<T, CancellationToken, Task> finalAction,
             CancellationToken cancellationToken
         )
-            where T : class
         {
             try
             {

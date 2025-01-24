@@ -8,7 +8,6 @@ namespace TobiStr
     /// </summary>
     /// <typeparam name="T">The type of the payload associated with the task.</typeparam>
     public interface IAsyncQuest<out T>
-        where T : class
     {
         /// <summary>
         /// Gets the payload associated with the task.
