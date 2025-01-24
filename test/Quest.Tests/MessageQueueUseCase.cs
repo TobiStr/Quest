@@ -19,9 +19,11 @@ public class MessageQueueUseCase
     {
         // Arrange
         var mockQueue = new Mock<IMessageQueue>();
-        var message = new MockMessage(Guid.NewGuid().ToString(), "Message from Queue");
+        mockQueue
+            .Setup(q => q.PeekLockMessage())
+            .Returns(new MockMessage(Guid.NewGuid().ToString(), "Message from Queue"));
 
-        mockQueue.Setup(q => q.PeekLockMessage()).Returns(message);
+        var message = mockQueue.Object.PeekLockMessage();
 
         // Build a Quest that completes the locked message on completion
         // or unlocks it after failure
@@ -78,9 +80,11 @@ public class MessageQueueUseCase
     {
         // Arrange
         var mockQueue = new Mock<IMessageQueue>();
-        var message = new MockMessage(Guid.NewGuid().ToString(), "Message from Queue");
+        mockQueue
+            .Setup(q => q.PeekLockMessage())
+            .Returns(new MockMessage(Guid.NewGuid().ToString(), "Message from Queue"));
 
-        mockQueue.Setup(q => q.PeekLockMessage()).Returns(message);
+        var message = mockQueue.Object.PeekLockMessage();
 
         // Build a Quest that completes the locked message on completion
         // or unlocks it after failure
@@ -105,12 +109,6 @@ public class MessageQueueUseCase
                 {
                     await Task.Delay(10);
                     return payload + " -> Step 1 Processed";
-                }),
-            async quest =>
-                await quest.SelectAsync(async payload =>
-                {
-                    await Task.Delay(10);
-                    return payload + " -> Step 2 Processed";
                 }),
             async quest =>
                 await quest.SelectAsync<string, string>(async payload =>
