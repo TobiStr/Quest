@@ -1,58 +1,8 @@
 ﻿namespace TobiStr.Tests;
 
 [TestFixture]
-public class QuestExtensionsCompleteTests
+public class AsyncQuestExtensionsCompleteTests
 {
-    [Test]
-    public void Complete_InvokesFinalActionAndCompletionAction_SetsStateToCompleted()
-    {
-        // Arrange
-        bool finalActionInvoked = false;
-        bool completionActionInvoked = false;
-        var quest = new Quest<int>(
-            42,
-            () => completionActionInvoked = true,
-            _ => Assert.Fail("Error action should not be invoked.")
-        );
-
-        // Act
-        quest.Complete(payload =>
-        {
-            Assert.That(payload, Is.EqualTo(42));
-            finalActionInvoked = true;
-        });
-
-        // Assert
-        Assert.That(finalActionInvoked, Is.True, "Final action was not invoked.");
-        Assert.That(completionActionInvoked, Is.True, "Completion action was not invoked.");
-        Assert.That(quest.State, Is.EqualTo(QuestState.Completed));
-    }
-
-    [Test]
-    public void Complete_WhenFinalActionThrowsError_InvokesErrorActionAndSetsStateToFailed()
-    {
-        // Arrange
-        bool errorActionInvoked = false;
-        var quest = new Quest<int>(
-            42,
-            () => Assert.Fail("Completion action should not be invoked."),
-            ex =>
-            {
-                errorActionInvoked = true;
-                Assert.That(ex?.Message, Is.EqualTo("Test error"));
-            }
-        );
-
-        // Act & Assert
-        var ex = Assert.Throws<Exception>(
-            () => quest.Complete(payload => throw new Exception("Test error"))
-        );
-
-        Assert.That(ex?.Message, Is.EqualTo("Test error"));
-        Assert.That(errorActionInvoked, Is.True, "Error action was not invoked.");
-        Assert.That(quest.State, Is.EqualTo(QuestState.Failed));
-    }
-
     [Test]
     public async Task CompleteAsync_InvokesFinalActionAndCompletionAction_SetsStateToCompleted()
     {
@@ -61,12 +11,12 @@ public class QuestExtensionsCompleteTests
         bool completionActionInvoked = false;
         var quest = new Quest<int>(
             42,
-            () => completionActionInvoked = true,
-            _ => Assert.Fail("Error action should not be invoked.")
+            async () => completionActionInvoked = true,
+            async _ => Assert.Fail("Error action should not be invoked.")
         );
 
         // Act
-        await ((IQuest<int>)quest).CompleteAsync(async payload =>
+        await ((IAsyncQuest<int>)quest).CompleteAsync(async payload =>
         {
             Assert.That(payload, Is.EqualTo(42));
             await Task.Delay(10);
@@ -86,8 +36,8 @@ public class QuestExtensionsCompleteTests
         bool errorActionInvoked = false;
         var quest = new Quest<int>(
             42,
-            () => Assert.Fail("Completion action should not be invoked."),
-            ex =>
+            async () => Assert.Fail("Completion action should not be invoked."),
+            async ex =>
             {
                 errorActionInvoked = true;
                 Assert.That(ex?.Message, Is.EqualTo("Test async error"));
@@ -97,7 +47,7 @@ public class QuestExtensionsCompleteTests
         // Act & Assert
         var ex = Assert.ThrowsAsync<Exception>(
             async () =>
-                await ((IQuest<int>)quest).CompleteAsync(async payload =>
+                await ((IAsyncQuest<int>)quest).CompleteAsync(async payload =>
                 {
                     await Task.Delay(10);
                     throw new Exception("Test async error");
@@ -117,13 +67,13 @@ public class QuestExtensionsCompleteTests
         bool completionActionInvoked = false;
         var quest = new Quest<int>(
             42,
-            () => completionActionInvoked = true,
-            _ => Assert.Fail("Error action should not be invoked.")
+            async () => completionActionInvoked = true,
+            async _ => Assert.Fail("Error action should not be invoked.")
         );
         var cancellationToken = CancellationToken.None;
 
         // Act
-        await ((IQuest<int>)quest).CompleteAsync(
+        await ((IAsyncQuest<int>)quest).CompleteAsync(
             async (payload, token) =>
             {
                 Assert.That(token, Is.EqualTo(cancellationToken));
@@ -147,8 +97,8 @@ public class QuestExtensionsCompleteTests
         bool errorActionInvoked = false;
         var quest = new Quest<int>(
             42,
-            () => Assert.Fail("Completion action should not be invoked."),
-            ex =>
+            async () => Assert.Fail("Completion action should not be invoked."),
+            async ex =>
             {
                 errorActionInvoked = true;
                 Assert.That(ex?.Message, Is.EqualTo("Test async error with token"));
@@ -159,7 +109,7 @@ public class QuestExtensionsCompleteTests
         // Act & Assert
         var ex = Assert.ThrowsAsync<Exception>(
             async () =>
-                await ((IQuest<int>)quest).CompleteAsync(
+                await ((IAsyncQuest<int>)quest).CompleteAsync(
                     async (payload, token) =>
                     {
                         await Task.Delay(10, token);
@@ -180,8 +130,8 @@ public class QuestExtensionsCompleteTests
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => Assert.Fail("Completion action should not be invoked."),
-            ex => Assert.That(ex, Is.TypeOf<TaskCanceledException>())
+            async () => Assert.Fail("Completion action should not be invoked."),
+            async ex => Assert.That(ex, Is.TypeOf<TaskCanceledException>())
         );
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -189,7 +139,7 @@ public class QuestExtensionsCompleteTests
         // Act & Assert
         Assert.ThrowsAsync<TaskCanceledException>(
             async () =>
-                await ((IQuest<int>)quest).CompleteAsync(
+                await ((IAsyncQuest<int>)quest).CompleteAsync(
                     async (payload, token) =>
                     {
                         await Task.Delay(10, token);

@@ -78,16 +78,15 @@ namespace TobiStr
         /// Executes the error handler.
         /// </summary>
         /// <param name="exception">The exception that caused the error.</param>
-        /// <exception cref="ArgumentNullException">Thrown if the exception is null.</exception>
         public void Fail(Exception exception)
         {
-            if (exception is null)
-                throw new ArgumentNullException(nameof(exception));
+            State = QuestState.Failed;
+
             if (onError == null)
                 throw new InvalidOperationException(
                     "Synchronous method was called on an asynchronous Quest object."
                 );
-            State = QuestState.Failed;
+
             onError.Invoke(exception);
         }
 
@@ -114,16 +113,13 @@ namespace TobiStr
         /// </summary>
         /// <param name="exception">The exception that caused the error.</param>
         /// <returns>A task that represents the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if the exception is null.</exception>
         public Task FailAsync(Exception exception)
         {
-            if (exception is null)
-                throw new ArgumentNullException(nameof(exception));
+            State = QuestState.Failed;
 
             if (onErrorAsync != null)
                 return onErrorAsync(exception);
 
-            State = QuestState.Failed;
             onError.Invoke(exception);
 
             return Task.CompletedTask;

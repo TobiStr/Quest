@@ -1,61 +1,21 @@
-﻿using NUnit.Framework.Internal;
-
-namespace TobiStr.Tests;
+﻿namespace TobiStr.Tests;
 
 [TestFixture]
-public class QuestExtensionTapTests
+public class AsyncQuestExtensionTapTests
 {
-    [Test]
-    public void Tap_ExecutesActionOnPayload_ReturnsSameQuest()
-    {
-        // Arrange
-        var quest = new Quest<int>(
-            42,
-            () => { },
-            _ => Assert.Fail("Error action should not be invoked.")
-        );
-        bool actionInvoked = false;
-
-        // Act
-        var result = quest.Tap(payload =>
-        {
-            actionInvoked = true;
-            Assert.That(payload, Is.EqualTo(42));
-        });
-
-        // Assert
-        Assert.That(result, Is.SameAs(quest));
-        Assert.That(actionInvoked, Is.True, "Action was not invoked on the payload.");
-    }
-
-    [Test]
-    public void Tap_WhenActionThrowsError_InvokesErrorActionAndThrows()
-    {
-        // Arrange
-        var quest = new Quest<int>(
-            42,
-            () => { },
-            ex => Assert.That(ex?.Message, Is.EqualTo("Test error"))
-        );
-
-        // Act & Assert
-        var ex = Assert.Throws<Exception>(() => quest.Tap(_ => throw new Exception("Test error")));
-        Assert.That(ex?.Message, Is.EqualTo("Test error"));
-    }
-
     [Test]
     public async Task TapAsync_ExecutesAsyncActionOnPayload_ReturnsSameQuest()
     {
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => { },
-            _ => Assert.Fail("Error action should not be invoked.")
+            async () => { },
+            async _ => Assert.Fail("Error action should not be invoked.")
         );
         bool actionInvoked = false;
 
         // Act
-        var result = await ((IQuest<int>)quest).TapAsync(async payload =>
+        var result = await ((IAsyncQuest<int>)quest).TapAsync(async payload =>
         {
             await Task.Delay(10);
             actionInvoked = true;
@@ -73,14 +33,14 @@ public class QuestExtensionTapTests
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => { },
-            ex => Assert.That(ex?.Message, Is.EqualTo("Test async error"))
+            async () => { },
+            async ex => Assert.That(ex?.Message, Is.EqualTo("Test async error"))
         );
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<Exception>(
             async () =>
-                await ((IQuest<int>)quest).TapAsync(async _ =>
+                await ((IAsyncQuest<int>)quest).TapAsync(async _ =>
                 {
                     await Task.Delay(10);
                     throw new Exception("Test async error");
@@ -96,14 +56,14 @@ public class QuestExtensionTapTests
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => { },
-            _ => Assert.Fail("Error action should not be invoked.")
+            async () => { },
+            async _ => Assert.Fail("Error action should not be invoked.")
         );
         bool actionInvoked = false;
         var cancellationToken = CancellationToken.None;
 
         // Act
-        var result = await ((IQuest<int>)quest).TapAsync(
+        var result = await ((IAsyncQuest<int>)quest).TapAsync(
             async (payload, token) =>
             {
                 Assert.That(token, Is.EqualTo(cancellationToken));
@@ -129,15 +89,15 @@ public class QuestExtensionTapTests
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => { },
-            ex => Assert.That(ex?.Message, Is.EqualTo("Test async error with token"))
+            async () => { },
+            async ex => Assert.That(ex?.Message, Is.EqualTo("Test async error with token"))
         );
         var cancellationToken = CancellationToken.None;
 
         // Act & Assert
         var ex = Assert.ThrowsAsync<Exception>(
             async () =>
-                await ((IQuest<int>)quest).TapAsync(
+                await ((IAsyncQuest<int>)quest).TapAsync(
                     async (payload, token) =>
                     {
                         await Task.Delay(10, token);
@@ -157,8 +117,8 @@ public class QuestExtensionTapTests
         // Arrange
         var quest = new Quest<int>(
             42,
-            () => { },
-            ex => Assert.That(ex, Is.TypeOf<TaskCanceledException>())
+            async () => { },
+            async ex => Assert.That(ex, Is.TypeOf<TaskCanceledException>())
         );
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -166,7 +126,7 @@ public class QuestExtensionTapTests
         // Act & Assert
         Assert.ThrowsAsync<TaskCanceledException>(
             async () =>
-                await ((IQuest<int>)quest).TapAsync(
+                await ((IAsyncQuest<int>)quest).TapAsync(
                     async (payload, token) =>
                     {
                         await Task.Delay(10, token);

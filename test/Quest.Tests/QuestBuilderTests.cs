@@ -4,130 +4,158 @@
 public class QuestBuilderTests
 {
     [Test]
-    public void WithPayload_SetsPayload_ReturnsBuilder()
+    public void GetSynchronousQuestBuilder_ReturnsSyncQuestBuilder()
     {
-        // Arrange
-        var builder = new QuestBuilder<int>();
-
         // Act
-        var result = builder.WithPayload(42);
+        var builder = QuestBuilder.GetSynchronousQuestBuilder<int>();
 
         // Assert
-        Assert.That(
-            result,
-            Is.SameAs(builder),
-            "WithPayload should return the same builder instance."
-        );
+        Assert.That(builder, Is.Not.Null);
+        Assert.That(builder, Is.InstanceOf<SyncQuestBuilder<int>>());
     }
 
     [Test]
-    public void OnComplete_SetsOnCompleteAction_ReturnsBuilder()
+    public void GetAsynchronousQuestBuilder_ReturnsAsyncQuestBuilder()
     {
-        // Arrange
-        var builder = new QuestBuilder<int>();
-        Action onComplete = () => { };
-
         // Act
-        var result = builder.OnComplete(onComplete);
+        var builder = QuestBuilder.GetAsynchronousQuestBuilder<int>();
 
         // Assert
-        Assert.That(
-            result,
-            Is.SameAs(builder),
-            "OnComplete should return the same builder instance."
-        );
+        Assert.That(builder, Is.Not.Null);
+        Assert.That(builder, Is.InstanceOf<AsyncQuestBuilder<int>>());
     }
 
     [Test]
-    public void OnComplete_WhenNull_ThrowsArgumentNullException()
+    public void SyncQuestBuilder_BuildsValidQuest()
     {
         // Arrange
-        var builder = new QuestBuilder<int>();
-
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentNullException>(() => builder.OnComplete(null));
-        Assert.That(ex?.ParamName, Is.EqualTo("onComplete"));
-    }
-
-    [Test]
-    public void OnError_SetsOnErrorAction_ReturnsBuilder()
-    {
-        // Arrange
-        var builder = new QuestBuilder<int>();
-        Action<Exception> onError = ex => { };
+        var builder = QuestBuilder.GetSynchronousQuestBuilder<int>();
+        bool onCompleteInvoked = false;
+        bool onErrorInvoked = false;
 
         // Act
-        var result = builder.OnError(onError);
-
-        // Assert
-        Assert.That(result, Is.SameAs(builder), "OnError should return the same builder instance.");
-    }
-
-    [Test]
-    public void OnError_WhenNull_ThrowsArgumentNullException()
-    {
-        // Arrange
-        var builder = new QuestBuilder<int>();
-
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentNullException>(() => builder.OnError(null));
-        Assert.That(ex?.ParamName, Is.EqualTo("onError"));
-    }
-
-    [Test]
-    public void Build_WhenAllSettingsValid_CreatesQuestInstance()
-    {
-        // Arrange
-        var builder = new QuestBuilder<int>()
+        var quest = builder
             .WithPayload(42)
-            .OnComplete(() => { })
-            .OnError(ex => { });
-
-        // Act
-        var quest = builder.Build();
+            .OnComplete(() => onCompleteInvoked = true)
+            .OnError(_ => onErrorInvoked = true)
+            .Build();
 
         // Assert
-        Assert.That(quest, Is.Not.Null, "Build should create a valid Quest instance.");
         Assert.That(quest.Payload, Is.EqualTo(42));
-        Assert.That(quest.State, Is.EqualTo(QuestState.Pending));
+        Assert.DoesNotThrow(() => quest.Complete());
+        Assert.That(onCompleteInvoked, Is.True);
+        Assert.DoesNotThrow(() => quest.Fail(new Exception()));
+        Assert.That(onErrorInvoked, Is.True);
     }
 
     [Test]
-    public void Build_WithoutPayload_ThrowsInvalidOperationException()
+    public void SyncQuestBuilder_ThrowsIfPayloadNotSet()
     {
         // Arrange
-        var builder = new QuestBuilder<int>().OnComplete(() => { }).OnError(ex => { });
+        var builder = QuestBuilder.GetSynchronousQuestBuilder<int>();
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
-        Assert.That(ex?.Message, Is.EqualTo("The payload must be set before building the quest."));
-    }
-
-    [Test]
-    public void Build_WithoutOnComplete_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        var builder = new QuestBuilder<int>().WithPayload(42).OnError(ex => { });
-
-        // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
-        Assert.That(
-            ex?.Message,
-            Is.EqualTo("The onComplete action must be set before building the quest.")
+        Assert.Throws<InvalidOperationException>(
+            () => builder.OnComplete(() => { }).OnError(_ => { }).Build()
         );
     }
 
     [Test]
-    public void Build_WithoutOnError_ThrowsInvalidOperationException()
+    public void SyncQuestBuilder_ThrowsIfOnCompleteNotSet()
     {
         // Arrange
-        var builder = new QuestBuilder<int>().WithPayload(42).OnComplete(() => { });
+        var builder = QuestBuilder.GetSynchronousQuestBuilder<int>();
 
         // Act & Assert
-        var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
-        Assert.That(
-            ex?.Message,
-            Is.EqualTo("The onError action must be set before building the quest.")
+        Assert.Throws<InvalidOperationException>(
+            () => builder.WithPayload(42).OnError(_ => { }).Build()
+        );
+    }
+
+    [Test]
+    public void SyncQuestBuilder_ThrowsIfOnErrorNotSet()
+    {
+        // Arrange
+        var builder = QuestBuilder.GetSynchronousQuestBuilder<int>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(
+            () => builder.WithPayload(42).OnComplete(() => { }).Build()
+        );
+    }
+
+    [Test]
+    public async Task AsyncQuestBuilder_BuildsValidAsyncQuest()
+    {
+        // Arrange
+        var builder = QuestBuilder.GetAsynchronousQuestBuilder<int>();
+        bool onCompleteInvoked = false;
+        bool onErrorInvoked = false;
+
+        // Act
+        var quest = builder
+            .WithPayload(42)
+            .OnCompleteAsync(async () =>
+            {
+                await Task.Delay(10);
+                onCompleteInvoked = true;
+            })
+            .OnErrorAsync(async _ =>
+            {
+                await Task.Delay(10);
+                onErrorInvoked = true;
+            })
+            .Build();
+
+        // Assert
+        Assert.That(quest.Payload, Is.EqualTo(42));
+        Assert.DoesNotThrowAsync(quest.CompleteAsync);
+        Assert.That(onCompleteInvoked, Is.True);
+        Assert.DoesNotThrowAsync(async () => await quest.FailAsync(new Exception()));
+        Assert.That(onErrorInvoked, Is.True);
+    }
+
+    [Test]
+    public void AsyncQuestBuilder_ThrowsIfPayloadNotSet()
+    {
+        // Arrange
+        var builder = QuestBuilder.GetAsynchronousQuestBuilder<int>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(
+            () =>
+                builder
+                    .OnCompleteAsync(async () => await Task.CompletedTask)
+                    .OnErrorAsync(async _ => await Task.CompletedTask)
+                    .Build()
+        );
+    }
+
+    [Test]
+    public void AsyncQuestBuilder_ThrowsIfOnCompleteAsyncNotSet()
+    {
+        // Arrange
+        var builder = QuestBuilder.GetAsynchronousQuestBuilder<int>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(
+            () => builder.WithPayload(42).OnErrorAsync(async _ => await Task.CompletedTask).Build()
+        );
+    }
+
+    [Test]
+    public void AsyncQuestBuilder_ThrowsIfOnErrorAsyncNotSet()
+    {
+        // Arrange
+        var builder = QuestBuilder.GetAsynchronousQuestBuilder<int>();
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(
+            () =>
+                builder
+                    .WithPayload(42)
+                    .OnCompleteAsync(async () => await Task.CompletedTask)
+                    .Build()
         );
     }
 }
