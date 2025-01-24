@@ -88,3 +88,91 @@ classDiagram
 ```
 
 By encapsulating the message handling logic within the Quest object, the Quest Pattern promotes a more modular, resilient, and maintainable architecture for message-driven systems.
+
+### Using Quest Pattern by the example of a Synchronous Message Queue
+
+```c#
+using Moq;
+using TobiStr;
+
+// Interface for the message queue
+public interface IMessageQueue
+{
+    MockMessage PeekLockMessage();
+    void UnlockMessage(string id);
+    void CompleteMessage(string id);
+}
+
+// Record representing a message
+public record MockMessage(string Id, string Content);
+
+public class SynchronousExample
+{
+    public async Task ProcessMessageInQuest()
+    {
+        // Simulate the MessageQueue
+        var mockQueue = new Mock<IMessageQueue>();
+        mockQueue
+            .Setup(q => q.PeekLockMessage())
+            .Returns(new MockMessage(Guid.NewGuid().ToString(), "Message from Queue"));
+
+        // Step 1: Retrieve a message from the queue
+        var message = mockQueue.Object.PeekLockMessage();
+
+        // Step 2: Wrap the message in a Quest
+        // -> Complete the Message on the Queue in case of successful completion
+        // -> Unlock the Message on the Queue in case of an error
+        var quest = QuestBuilder
+            .GetSynchronousQuestBuilder<string>()
+            .WithPayload(message.Content)
+            .OnComplete(() => mockQueue.Object.CompleteMessage(message.Id))
+            .OnError(ex =>
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                mockQueue.Object.UnlockMessage(message.Id);
+            })
+            .Build();
+
+        // Step 3: Define processing steps
+        // these can be completely independent implementations
+        var processors = new List<Func<IQuest<string>, Task<IQuest<string>>>>()
+        {
+            async quest =>
+                await quest.SelectAsync(async payload =>
+                {
+                    await Task.Delay(10);
+                    return payload + " -> Step 1 Processed";
+                }),
+            async quest =>
+                await quest.SelectAsync<string, string>(async payload =>
+                {
+                    // throw an exception to force the OnError callback
+                    await Task.Delay(10);
+                    throw new InvalidOperationException("Simulated Exception");
+                }),
+        };
+
+        // Step 4: Process the Quest
+        try
+        {
+            foreach (var processor in processors)
+            {
+                quest = await processor(quest);
+            }
+        }
+        catch (Exception) { }
+
+        // Step 5: Try to complete the Quest
+        // This step will fail, since we already failed in Step 3.
+        try
+        {
+            quest.Complete(payload => Console.WriteLine($"Step 3: Finalizing {payload}"));
+        }
+        catch (Exception) { }
+
+        // Verify that UnlockMessage has been called on the MessageQueue
+        mockQueue.Verify(q => q.CompleteMessage(It.IsAny<string>()), Times.Never);
+        mockQueue.Verify(q => q.UnlockMessage(message.Id), Times.Once);
+    }
+}
+```
