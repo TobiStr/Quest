@@ -70,6 +70,11 @@ namespace TobiStr
                 throw new InvalidOperationException(
                     "Synchronous method was called on an asynchronous Quest object."
                 );
+            if (State != QuestState.Pending)
+                throw new InvalidOperationException(
+                    $"The Quest has already been terminated with a status of '{State}'."
+                );
+
             State = QuestState.Completed;
             onComplete.Invoke();
         }
@@ -80,6 +85,11 @@ namespace TobiStr
         /// <param name="exception">The exception that caused the error.</param>
         public void Fail(Exception exception)
         {
+            if (State != QuestState.Pending)
+                throw new InvalidOperationException(
+                    $"The Quest has already been terminated with a status of '{State}'."
+                );
+
             State = QuestState.Failed;
 
             if (onError == null)
@@ -97,6 +107,11 @@ namespace TobiStr
         /// <returns>A task that represents the asynchronous operation.</returns>
         public Task CompleteAsync()
         {
+            if (State != QuestState.Pending)
+                throw new InvalidOperationException(
+                    $"The Quest has already been terminated with a status of '{State}'."
+                );
+
             State = QuestState.Completed;
 
             if (onCompleteAsync != null)
@@ -115,6 +130,11 @@ namespace TobiStr
         /// <returns>A task that represents the asynchronous operation.</returns>
         public Task FailAsync(Exception exception)
         {
+            if (State != QuestState.Pending)
+                throw new InvalidOperationException(
+                    $"The Quest has already been terminated with a status of '{State}'."
+                );
+
             State = QuestState.Failed;
 
             if (onErrorAsync != null)

@@ -44,8 +44,8 @@ public class QuestBuilderTests
         Assert.That(quest.Payload, Is.EqualTo(42));
         Assert.DoesNotThrow(() => quest.Complete());
         Assert.That(onCompleteInvoked, Is.True);
-        Assert.DoesNotThrow(() => quest.Fail(new Exception()));
-        Assert.That(onErrorInvoked, Is.True);
+        Assert.Throws<InvalidOperationException>(() => quest.Fail(new Exception()));
+        Assert.That(onErrorInvoked, Is.False);
     }
 
     [Test]
@@ -111,8 +111,10 @@ public class QuestBuilderTests
         Assert.That(quest.Payload, Is.EqualTo(42));
         Assert.DoesNotThrowAsync(quest.CompleteAsync);
         Assert.That(onCompleteInvoked, Is.True);
-        Assert.DoesNotThrowAsync(async () => await quest.FailAsync(new Exception()));
-        Assert.That(onErrorInvoked, Is.True);
+        Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await quest.FailAsync(new Exception())
+        );
+        Assert.That(onErrorInvoked, Is.False);
     }
 
     [Test]
